@@ -1,0 +1,29 @@
+name: Capture quotidienne des bourses
+on:
+  schedule:
+    # 18h45 UTC, jours ouvres — apres la cloture des 5 bourses (NGX 13h30 UTC,
+    # MSE 15h UTC, USE publie a 10h UTC...). Les crons Actions peuvent glisser
+    # de quelques minutes, sans importance ici.
+    - cron: '45 18 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Capturer les 5 bourses
+        run: python capture.py
+      - name: Archiver dans le depot
+        run: |
+          git config user.name "sigma-capture-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add snapshots
+          git diff --cached --quiet || git commit -m "snapshot $(date -u +%F)"
+          git push
